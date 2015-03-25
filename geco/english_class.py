@@ -39,7 +39,7 @@ out_file_name = 'example-data-english.csv'
 
 # Set how many original and how many duplicate records are to be generated.
 #
-num_org_rec = 20
+num_org_rec = 4
 num_dup_rec = 2
 
 # Set the maximum number of duplicate records can be generated per original
@@ -128,6 +128,30 @@ class AttrMeta(type):
                 generator.GenerateFuncAttribute(attribute_name = 'passport-number',
                 function = attrgenfunct.generate_passport_num)
 
+        # Mother maiden name
+        self.mother = \
+    generator.GenerateFreqAttribute(attribute_name = 'mother-maiden-name',
+                    freq_file_name = os.path.abspath('lookup_files/lastname.csv'),
+                    has_header_line = False,
+                    unicode_encoding = unicode_encoding_used)
+        self.address_attr = \
+    generator.GenerateFuncAttribute(attribute_name = 'street-address',
+                function = attrgenfunct.generate_address)
+        
+        self.city_attr = \
+                generator.GenerateFuncAttribute(attribute_name = 'city',
+                function = attrgenfunct.generate_city)
+
+        self.state_attr = \
+                generator.GenerateFuncAttribute(attribute_name = 'state',
+                function = attrgenfunct.generate_state)
+
+        self.primary_ID_attr = \
+                generator.GenerateFuncAttribute(attribute_name = 'primary_key',
+                function = attrgenfunct.generate_primary)
+
+
+
 class AttrSet(object):
     "the female gender class"
     
@@ -165,6 +189,7 @@ class AttrSet(object):
                                 has_header_line = False,
                                 unicode_encoding = unicode_encoding_used) 
 
+
         # Calculating the DOB.  Requires the age to be passed
         #self.DOB_attr = \
         #        generator.GenerateFuncAttribute(attribute_name = 'DOB',
@@ -189,15 +214,16 @@ class AttrSet(object):
         #single attr need create_attribute_values(), singular
         #compound attr need create_attribute_values(), plural!
         #must update compound context to USA
-        primary = [self.gname_attr, self.mname_attr, 
+        primary = [self.primary_ID_attr, self.gname_attr, self.mname_attr, 
                   self.sname_attr, self.name_suffix_attr,
                   self.name_prefix_attr, 
                   self.sname_prev_attr, self.nickname_attr,
-                  self.new_age_attr, self.gender_attr,
+                  self.new_age_attr, self.gender_attr, self.address_attr,
+                  self.city_attr, self.state_attr,
                   self.postcode_attr, self.phone_num_cell_attr,
                   self.phone_num_work_attr, self.phone_num_home_attr,
                   self.credit_card_attr, self.social_security_attr,
-                  self.passport_attr]
+                  self.passport_attr, self.mother]
         
         #add_out = [self.name_prefix_attr, self.nickname_attr,
         #  self.phone_num_cell_attr, self.phone_num_work_attr, 
@@ -214,7 +240,7 @@ class AttrSet(object):
         
         self.email_attr = generator.GenerateFuncAttribute(attribute_name = 'email',
           function = attrgenfunct.generate_email_address,
-          parameters = [str(out[0]), str(out[2])]
+          parameters = [str(out[1]), str(out[3])]
           )
 
         out.append(self.email_attr.create_attribute_value())
@@ -222,7 +248,7 @@ class AttrSet(object):
 
         self.DOB_attr = generator.GenerateFuncAttribute(attribute_name = 'DOB',
            function = attrgenfunct.generate_DOB,
-           parameters = [int(out[7])]
+           parameters = [int(out[8])]
            )
 
         out.append(self.DOB_attr.create_attribute_value())
@@ -246,18 +272,60 @@ class AttrSet(object):
         out.append(self.hispanic_attr.create_attribute_value())
         labels.append(self.hispanic_attr.attribute_name)
 
-        #out.append(self.gname2_attr.create_attribute_value())
-        #labels.append(self.gname2_attr.attribute_name)      
-
-        #add_out_values = [x.create_attribute_value() for x in add_out]
-        #out.extend(add_out_values)
-
-        #add_out_labels = [x.attribute_name for x in add_out]
-        #labels.extend(add_out_labels)
+        self.marriage_attr = generator.GenerateFuncAttribute(attribute_name='marital-status',
+          function = attrgenfunct.marriage,
+          parameters=[int(out[8])])
+        
+        out.append(self.marriage_attr.create_attribute_value())
+        labels.append(self.marriage_attr.attribute_name)
 
         outputwork2 = OrderedDict(zip(labels,out))
         
         return outputwork2
+
+    def output_alt(self, *args):
+
+          primary = list(args)
+          out = OrderedDict((attr.attribute_name, attr.create_attribute_value()) for attr in primary)
+          
+          def attr_out_set(container, attr):
+              container[attr.attribute_name] = attr.create_attribute_value() 
+
+          self.email_attr = generator.GenerateFuncAttribute(attribute_name = 'email',
+              function = attrgenfunct.generate_email_address,
+              parameters = [str(out['given-name']), str(out['surname'])]
+              )
+
+          self.DOB_attr = generator.GenerateFuncAttribute(attribute_name = 'DOB',
+           function = attrgenfunct.generate_DOB,
+           parameters = [int(out['age-new'])]
+           )
+
+          r_h = self.race_hispanic.random_pick().split('..')
+          self.race = r_h[1]
+          self.hispanic = r_h[0]
+
+          self.race_attr = generator.GenerateFuncAttribute(attribute_name='race',
+              function = attrgenfunct.race,
+              parameters = [str(self.race)])
+
+          self.hispanic_attr = generator.GenerateFuncAttribute(attribute_name='hispanic',
+          function = attrgenfunct.hispanic,
+          parameters=[str(self.hispanic)])
+
+          self.marriage_attr = generator.GenerateFuncAttribute(attribute_name='marital-status',
+          function = attrgenfunct.marriage,
+          parameters=[int(out['age-new'])])
+
+          depend = [self.email_attr, self.DOB_attr, self.race_attr,\
+                    self.hispanic_attr, self.marriage_attr]
+
+          for value in depend:
+              attr_out_set(out, value)
+
+          return out
+
+
 
 class AttrSetM(AttrSet):
     "the male gender class"
@@ -283,10 +351,8 @@ class AttrSetM(AttrSet):
                    function = attrgenfunct.generate_name_suffix)
 
         self.sname_prev_attr = \
-    generator.GenerateFreqAttribute(attribute_name = 'previous-surname',
-                    freq_file_name = os.path.abspath('lookup_files/lastname.csv'),
-                    has_header_line = False,
-                    unicode_encoding = unicode_encoding_used)
+    generator.GenerateFuncAttribute(attribute_name = 'previous-surname',
+                   function = attrgenfunct.generate_surname_m)
 
         self.name_prefix_attr = \
     generator.GenerateFuncAttribute(attribute_name = 'name-prefix',
@@ -378,10 +444,12 @@ given_name_missing_val_corruptor = corruptor.CorruptMissingValue(\
 # If a probability is set to 0 for a certain attribute, then no modification
 # will be applied on this attribute.
 #
-attr_mod_prob_dictionary = {'given-name':0.35,'surname':0.35,'postcode':0.05,
+attr_mod_prob_dictionary = {'given-name':0.05, 'middle-name':0.05, 'gender':0.05, 'surname':0.05,'postcode':0.05,
               'cell-number':0.05, 'work-number':0.05,
-              'home-number':0.05, 'social-security-number':0.05, 
-              'credit-card-number':0.05}
+              'home-number':0.05, 'social-security-number':0.05, 'passport-number':0.05, 
+              'credit-card-number':0.05, 'name-suffix': .01, 'name-prefix': 0.01, 'previous-surname':0.05,
+              'mother-maiden-name':0.05, 'street-address':0.05, 'email':0.05, 'race':0.01, 
+              'hispanic':0.01, 'city':0.01, 'state':0.05, 'age-new':0.05, 'DOB':0.05, 'marital-status':0.05}
                             
 
 # Define the actual corruption (modification) methods that will be applied on
@@ -402,7 +470,17 @@ attr_mod_data_dictionary = {'surname':[(0.15, surname_misspell_corruptor),
                                          (0.15, edit_corruptor),
                                          (0.15, edit_corruptor2),
                                          (0.1, missing_val_corruptor)],
-                            #'gender':[(1.0, missing_val_corruptor)],
+                            'middle-name':[(0.15, given_name_missing_val_corruptor), 
+                                         (0.15, ocr_corruptor),
+                                     (0.15, keyboard_corruptor),
+                                         (0.15, phonetic_corruptor),
+                                         (0.15, edit_corruptor),
+                                         (0.15, edit_corruptor2),
+                                         (0.1, missing_val_corruptor)],
+                            'gender':[(0.25, keyboard_corruptor),
+                                       (0.25, edit_corruptor),
+                                       (0.25, edit_corruptor2),
+                                       (0.25, missing_val_corruptor)],
                             'postcode':[(0.3, keyboard_corruptor),
                                        (0.2, postcode_missing_val_corruptor),
                                        (0.5, missing_val_corruptor)],
@@ -418,8 +496,71 @@ attr_mod_data_dictionary = {'surname':[(0.15, surname_misspell_corruptor),
                             'social-security-number':[(0.2, edit_corruptor),
                                     (0.2, edit_corruptor2),
                                     (0.6, missing_val_corruptor)],
-                            'credit-card-number':[(0.5, edit_corruptor),
-                                    (0.5, edit_corruptor2)]}
+                            'credit-card-number':[(0.25, edit_corruptor),
+                                    (0.25, edit_corruptor2),
+                                    (0.5, missing_val_corruptor)],
+                            'name-suffix':[(1.0, missing_val_corruptor)],
+                            'name-prefix':[(1.0, missing_val_corruptor)],
+                            'previous-surname':[(0.15, surname_misspell_corruptor),
+                                       (0.15, ocr_corruptor),
+                                       (0.15, keyboard_corruptor),
+                                       (0.15, phonetic_corruptor),
+                                       (0.15, edit_corruptor),
+                                       (0.15, edit_corruptor2),
+                                       (0.1, missing_val_corruptor)],
+                            'passport-number':[(0.25, edit_corruptor),
+                                    (0.25, edit_corruptor2),
+                                    (0.5, missing_val_corruptor)],  
+                            'mother-maiden-name':[(0.15, surname_misspell_corruptor),
+                                       (0.15, ocr_corruptor),
+                                       (0.15, keyboard_corruptor),
+                                       (0.15, phonetic_corruptor),
+                                       (0.15, edit_corruptor),
+                                       (0.15, edit_corruptor2),
+                                       (0.1, missing_val_corruptor)],
+                            'street-address':[(0.15, ocr_corruptor),
+                                       (0.15, keyboard_corruptor),
+                                       (0.15, phonetic_corruptor),
+                                       (0.15, edit_corruptor),
+                                       (0.2, edit_corruptor2),
+                                       (0.2, missing_val_corruptor)],
+                            'email':[(0.15, ocr_corruptor),
+                                       (0.15, keyboard_corruptor),
+                                       (0.15, phonetic_corruptor),
+                                       (0.15, edit_corruptor),
+                                       (0.2, edit_corruptor2),
+                                       (0.2, missing_val_corruptor)],
+                            'race':[(0.15, ocr_corruptor),
+                                       (0.15, keyboard_corruptor),
+                                       (0.15, phonetic_corruptor),
+                                       (0.15, edit_corruptor),
+                                       (0.2, edit_corruptor2),
+                                       (0.2, missing_val_corruptor)],
+                            'hispanic':[(0.15, ocr_corruptor),
+                                       (0.15, keyboard_corruptor),
+                                       (0.15, phonetic_corruptor),
+                                       (0.15, edit_corruptor),
+                                       (0.2, edit_corruptor2),
+                                       (0.2, missing_val_corruptor)],
+                            'city':[(0.15, ocr_corruptor),
+                                       (0.15, keyboard_corruptor),
+                                       (0.15, phonetic_corruptor),
+                                       (0.15, edit_corruptor),
+                                       (0.2, edit_corruptor2),
+                                       (0.2, missing_val_corruptor)], 
+                            'state':[(0.25, keyboard_corruptor),
+                                       (0.25, edit_corruptor),
+                                       (0.25, edit_corruptor2),
+                                       (0.25, missing_val_corruptor)],
+                            'age-new':[(0.25, edit_corruptor),
+                                    (0.25, edit_corruptor2),
+                                    (0.5, missing_val_corruptor)], 
+                            'DOB':[(0.25, edit_corruptor),
+                                    (0.25, edit_corruptor2),
+                                    (0.5, missing_val_corruptor)],
+                            'marital-status':[(0.25, edit_corruptor),
+                                    (0.25, edit_corruptor2),
+                                    (0.5, missing_val_corruptor)]}
                                        
                             #'city':[(0.1, edit_corruptor),
                             #        (0.1, missing_val_corruptor),
@@ -461,7 +602,7 @@ def from_tdc(tdc_in):
 def to_corruptor_write(corruptor_csv, file_name='English_corrupt_output.csv'):
     'write corruptor data with id row'
     
-    with open(file_name, 'a') as csvfile:
+    with open(file_name, 'w') as csvfile:
         writer = csv.writer(csvfile)
         #writer.writerow()
         writer.writerows(corruptor_csv)
@@ -481,7 +622,9 @@ def to_csv(genfunct_input, fieldnames,file_name='English_output.csv'):
 def to_string(genfunct_input, fieldnames):
   'writing to an io string'
   output = StringIO.StringIO()
-  output.write(genfunct_input)
+  writer = csv.DictWriter(output, fieldnames=fieldnames)
+  writer.writeheader()
+  writer.writerows(genfunct_input)
   contents = output.getvalue()
   #print output.getvalue()
   return contents
@@ -490,7 +633,8 @@ def to_string(genfunct_input, fieldnames):
 def to_corruptor_write_io_string(corruptor_csv):
     'write corruptor to an io string'
     output = StringIO.StringIO()
-    output.write(corruptor_csv)
+    writer = csv.writer(output)
+    writer.writerows(corruptor_csv)
     corrupt_contents = output.getvalue()
     #print corrupt_contents
     return corrupt_contents
@@ -509,21 +653,15 @@ def corrupt_output(a_output):
     to_corruptor_write(from_tdc(test_data_corruptor.corrupt_records(\
                                 to_corruptor_gf(a_output))))
 
-
-
-
-
 # Code to output to IO string vs CSV (next two functions)
 def original_output2(base_output, a):
-    to_string(base_output,a.output().keys())
+    return to_string(base_output,a.output().keys())
 
 def corrupt_output2(base_output):
-  to_corruptor_write(from_tdc(test_data_corruptor.corrupt_records(\
+  return to_corruptor_write(from_tdc(test_data_corruptor.corrupt_records(\
                                 to_corruptor_gf(base_output)))) 
 
-attr_name_list = ['given-name', 'middle-name', 'surname', 'name-suffix',
-    'race', 'hispanic', 'email', 'postcode', 'cell-number', 'work-number', 'home-number',
-    'social-security-number', 'credit-card-number'] 
+attr_name_list = row_keys(AttrSet())
 
 #attr_data_list = AttrSet().output().values()
 
@@ -545,11 +683,6 @@ test_data_corruptor = corruptor.CorruptDataSet(number_of_org_records = \
                                                  attr_mod_prob_dictionary,
                                           attr_mod_data_dict = \
                                                  attr_mod_data_dictionary)
-
-#new_corrupt = base_output.append(base_output_c)
-
-#corrupt_output(base_output_c)
-
 
 '''
 # =============================================================================
@@ -579,15 +712,25 @@ test_data_generator.write()
 if __name__ == '__main__':
     b = AttrSet()
     c = AttrSetM()
+
     base_output_b = list(row_synth(b, num_org_rec/2 ))
     base_output_c = list(row_synth(c, num_org_rec/2 ))
     
     #Extend female engender list
     base_output_b.extend(base_output_c)
-
+   
     #Shuffle the list
-    random.shuffle(base_output_b)
+    #random.shuffle(base_output_b)
 
+    #Creating the list to replace the primary key list
+
+    i = 0
+    y = 1
+    while i < len(base_output_b):
+      for x in base_output_b:
+        x['primary_key'] = (i+1)
+        i = i+1
+    
     original_output(base_output_b, b)
     corrupt_output(base_output_b)
 

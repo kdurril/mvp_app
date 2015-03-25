@@ -7,7 +7,12 @@
 import sqlite3
 from mvp_db import conn, curs, qry_commit, qry_drop_basic, qry_drop_corrupt, qry_create_basic, qry_create_corrupt
 from flask import Flask, request, session, g, redirect, url_for, \
-     abort, render_template, flash
+     abort, render_template, flash, Response
+
+from geco.english_class import original_output2, corrupt_output2,\
+                               AttrSet, AttrSetM, row_synth, num_org_rec,\
+                               to_string, to_corruptor_gf, test_data_corruptor,\
+                               from_tdc, to_corruptor_write_io_string
 
 
 #configuration
@@ -105,8 +110,46 @@ def show_corrupt(entry_id):
     corrupt = [dict(id=row[0], name_last=row[1], name_first=row[2], gender=row[3]) for row in cur.fetchall()]
     return render_template('single_entry.html', entries=entries, corrupt=corrupt, entry_id=entry_id)
 
+@app.route('/original_out')
+def new_original():
+    b = AttrSet()
+    c = AttrSetM()
+
+    base_output_b = list(row_synth(b, num_org_rec/2 ))
+    base_output_c = list(row_synth(c, num_org_rec/2 ))
+    base_output_b.extend(base_output_c)
+
+    original_io = to_string(base_output_b, b.output().keys())
+
+    corrupt_io = to_corruptor_write_io_string(\
+                 from_tdc(\
+                 test_data_corruptor.corrupt_records(\
+                 to_corruptor_gf(base_output_b))))
+
+    final_output = [('original', original_io), ('corrupt',corrupt_io)]
+
+    def gen_out():
+        for out in final_output:
+
+            yield Response(out[1],\
+                     mimetype="text/csv",\
+                     headers={"Content-Disposition":
+                              "attachment;filename="+out[0]+".csv"})
+
+    return Response(original_io,\
+                     mimetype="text/csv",\
+                     headers={"Content-Disposition":
+                              "attachment;filename=original.csv"}) \
+            
+    #corrupt_output2(base_output_b)
+
+#@app.route('/corrupt_out')
+#def new_corrupt():
+
+
+
 #log in log out
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login/', methods=['GET', 'POST'])
 def login():
     error = None
     if request.method == 'POST':
