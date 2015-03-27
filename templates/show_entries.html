@@ -17,6 +17,9 @@
       <input type="checkbox" name="first name" value="gname"/>First Name<br/>
       <input type="submit" value="send">
     </form>
+    <form action="{{ url_for('original_out')}}" method="get" class="add-entry">
+      <input type="submit" value="synthesize"/>
+    </form>
   {% endif %}
   <ul class="entries">
   {% for entry in entries %}
