@@ -126,7 +126,7 @@ def new_original():
                  test_data_corruptor.corrupt_records(\
                  to_corruptor_gf(base_output_b))))
 
-    final_output = [('original', original_io), ('corrupt',corrupt_io)]
+    final_output = (('original', original_io), ('corrupt',corrupt_io))
 
     def gen_out():
         for out in final_output:
@@ -136,10 +136,15 @@ def new_original():
                      headers={"Content-Disposition":
                               "attachment;filename="+out[0]+".csv"})
 
-    return Response(original_io,\
-                     mimetype="text/csv",\
-                     headers={"Content-Disposition":
-                              "attachment;filename=original.csv"}) \
+    def csv_stream():
+        for out in final_output:
+            yield (b'--frontier\r\n' 
+                b'Content-Type: text/csv\r\n\r\n' + out[1]+ b'\r\n'
+                b'Content-Disposition:attachment; filename=' + out[0] + b'.csv\r\n')
+
+
+    return Response(csv_stream(),\
+                     mimetype="multipart/mixed; boundary=frontier") \
             
     #corrupt_output2(base_output_b)
 
