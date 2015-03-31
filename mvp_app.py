@@ -169,15 +169,17 @@ def new_corrupt():
 
     final_output = (('original.csv', original_io), ('corrupt.csv',corrupt_io))
 
-       
-    tar = tarfile.open(fileobj=TemporaryFile(), mode="w|gz")
-    
-    for output in final_output:
-        to_tar = tarfile.TarInfo(output[0])
-        to_tar.size =  len(output[1])
-        tar.addfile(to_tar, StringIO(output[1]))
+    with tarfile.open("synthesized_stream.tar.gz", "w:gz") as tar:
+        for output in final_output:
+            to_tar = tarfile.TarInfo(output[0])
+            to_tar.size =  len(output[1])
+            tar.addfile(to_tar, StringIO(output[1]))
+            tar.add("geco_log.txt")
 
-    return Response(tar.fileobject.read(),\
+    #tar = tarfile.open("synthesized_stream.tar.gz", "r|gz")
+
+    tar = open("synthesized_stream.tar.gz", "rb")
+    return Response(tar.read(),\
                      mimetype="application/gzip",\
                      headers={"Content-Disposition":
                               "attachment;filename=synthesized.tar.gz"})
