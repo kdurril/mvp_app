@@ -174,12 +174,14 @@ def new_corrupt():
             to_tar = tarfile.TarInfo(output[0])
             to_tar.size =  len(output[1])
             tar.addfile(to_tar, StringIO(output[1]))
-            tar.add("geco_log.txt")
+        tar.add("geco_log.txt")
 
     #tar = tarfile.open("synthesized_stream.tar.gz", "r|gz")
-
-    tar = open("synthesized_stream.tar.gz", "rb")
-    return Response(tar.read(),\
+    def tar_stream():
+        tar = open("synthesized_stream.tar.gz", "rb")
+        yield tar.read()
+    
+    return Response(tar_stream(),\
                      mimetype="application/gzip",\
                      headers={"Content-Disposition":
                               "attachment;filename=synthesized.tar.gz"})
