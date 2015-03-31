@@ -13,6 +13,9 @@ from geco.english_class import original_output2, corrupt_output2,\
                                AttrSet, AttrSetM, row_synth, num_org_rec,\
                                to_string, to_corruptor_gf, test_data_corruptor,\
                                from_tdc, to_corruptor_write_io_string
+from StringIO import StringIO
+from tempfile import TemporaryFile
+import tarfile
 
 
 #configuration
@@ -146,10 +149,43 @@ def new_original():
     return Response(csv_stream(),\
                      mimetype="multipart/mixed; boundary=frontier") \
             
-    #corrupt_output2(base_output_b)
 
-#@app.route('/corrupt_out')
-#def new_corrupt():
+
+@app.route('/all_out')
+def new_corrupt():
+    b = AttrSet()
+    c = AttrSetM()
+
+    base_output_b = list(row_synth(b, num_org_rec/2 ))
+    base_output_c = list(row_synth(c, num_org_rec/2 ))
+    base_output_b.extend(base_output_c)
+
+    original_io = to_string(base_output_b, b.output().keys())
+
+    corrupt_io = to_corruptor_write_io_string(\
+                 from_tdc(\
+                 test_data_corruptor.corrupt_records(\
+                 to_corruptor_gf(base_output_b))))
+
+    final_output = (('original.csv', original_io), ('corrupt.csv',corrupt_io))
+
+       
+    tar = tarfile.open(fileobj=TemporaryFile(), mode="w|gz")
+    
+    for output in final_output:
+        to_tar = tarfile.TarInfo(output[0])
+        to_tar.size =  len(output[1])
+        tar.addfile(to_tar, StringIO(output[1]))
+
+    return Response(tar.fileobject.read(),\
+                     mimetype="application/gzip",\
+                     headers={"Content-Disposition":
+                              "attachment;filename=synthesized.tar.gz"})
+
+
+
+
+
 
 
 
