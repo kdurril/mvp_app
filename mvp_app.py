@@ -9,10 +9,12 @@ from mvp_db import conn, curs, qry_commit, qry_drop_basic, qry_drop_corrupt, qry
 from flask import Flask, request, session, g, redirect, url_for, \
      abort, render_template, flash, Response
 
+from geco.corruptor import CorruptDataSet
 from geco.english_class import original_output2, corrupt_output2,\
                                AttrSet, AttrSetM, row_synth, num_org_rec,\
                                to_string, to_corruptor_gf, test_data_corruptor,\
                                from_tdc, to_corruptor_write_io_string
+
 from StringIO import StringIO
 from tempfile import TemporaryFile
 import tarfile
@@ -176,7 +178,7 @@ def new_corrupt():
             tar.addfile(to_tar, StringIO(output[1]))
         #to_tar = tarfile.TarInfo('geco_log.txt')
         #to_tar.size = test_data_corruptor.corrupt_log.len
-        #tar.addfile(test_data_corruptor.corrupt_log)
+        #tar.addfile(test_data_corruptor.corrupt_log.read())
 
     #tar = tarfile.open("synthesized_stream.tar.gz", "r|gz")
     def tar_stream():
@@ -187,13 +189,46 @@ def new_corrupt():
                      mimetype="application/gzip",\
                      headers={"Content-Disposition":
                               "attachment;filename=synthesized.tar.gz"})
+@app.route('/select_attr/', methods=['POST'])
+def select_attr():
+    
+    num_org_rec = request.form["NumGen"]
+    num_dup_rec = request.form["NumDup"]
+    max_duplicate_per_record = request.form["MaxDup"]
+    max_modification_per_attr = request.form["MaxMod_Attr"]
+    num_modification_per_record = request.form["MaxMod_Rec"]
+    
+    #CorruptDataSet from corruptors.py
+    test_data_corruptor = CorruptDataSet(number_of_org_records = \
+                                          num_org_rec,
+                                          number_of_mod_records = num_dup_rec,
+                                          attribute_name_list = attr_name_list,
+                                          max_num_dup_per_rec = \
+                                                 max_duplicate_per_record,
+                                          num_dup_dist = \
+                                                 num_duplicates_distribution,
+                                          max_num_mod_per_attr = \
+                                                 max_modification_per_attr,
+                                          num_mod_per_rec = \
+                                                 num_modification_per_record,
+                                          attr_mod_prob_dict = \
+                                                 attr_mod_prob_dictionary,
+                                          attr_mod_data_dict = \
+                                                 attr_mod_data_dictionary)
+    b = AttrSet()
+    c = AttrSetM()
+    base_output_b = list(row_synth_alt(b, num_org_rec/2 ))
+    base_output_c = list(row_synth_alt(c, num_org_rec/2 ))
+    base_output_b.extend(base_output_c)
 
+    original_io = to_string(base_output_b, b.output().keys())
 
+    corrupt_io = to_corruptor_write_io_string(\
+                 from_tdc(\
+                 test_data_corruptor.corrupt_records(\
+                 to_corruptor_gf(base_output_b))))
 
-
-
-
-
+    return str(request.form.values())
 
 #log in log out
 @app.route('/login/', methods=['GET', 'POST'])

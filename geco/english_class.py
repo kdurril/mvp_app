@@ -15,7 +15,7 @@ import csv
 import json
 import os
 import StringIO
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 
 random.seed(42)  # Set seed for random generator, so data generation can be
                  # repeated
@@ -187,26 +187,13 @@ class AttrSet(object):
               generator.GenerateFreqAlt(attribute_name = 'age-new',
                                 freq_file_name = os.path.abspath('lookup_files/age_gender_ratio_female.csv'),
                                 has_header_line = False,
-                                unicode_encoding = unicode_encoding_used) 
-
-
-        # Calculating the DOB.  Requires the age to be passed
-        #self.DOB_attr = \
-        #        generator.GenerateFuncAttribute(attribute_name = 'DOB',
-        #                           function = attrgenfunct.generate_DOB)
-        
-        #self.labels = ['gender', 'given-name', 'middle-name', 'surname', 'name-suffix',
-        #               'name-prefix', 'previous-surname', 'nickname',
-        #               'age-uniform', 'income-normal', 'rating-normal', 'age-new',
-        #               'DOB']
-
-        #self.labels2 = ['postcode', 'city', 'previous-surname', 'nickname', 
-        #                'cell-number', 'work-number', 'home-number',  
-        #              'social-security-number', 'credit-card-number', 
-        #              'income-normal', 'age-uniform', 'income', 
-        #              'age', 'sex', 'blood-pressure', 'passport-number',
-        #              'email', 'race-hispanic', 'age-new']
-
+                                unicode_encoding = unicode_encoding_used)
+    
+    AttrCheck = namedtuple('AttrCheck',['primary_ID','gname', 'mname','sname','name_suffix',\
+                                  'name_prefix','sname_prev','nickname','new_age',\
+                                  'gender','address','city','state','postcode',\
+                                  'phone_num_cell','phone_num_work','phone_num_home',\
+                                  'credit_card','social_security','passport','mother'])
 
     def output(self):
         'create synthetic output'
@@ -283,11 +270,47 @@ class AttrSet(object):
         
         return outputwork2
 
-    def output_alt(self, *args):
+    def output_alt(self, *args, **kwargs):
+          'selective attribute output'
 
-          primary = list(args)
-          out = OrderedDict((attr.attribute_name, attr.create_attribute_value()) for attr in primary)
+          required = [self.primary_ID_attr, self.gname_attr, self.mname_attr, 
+                  self.sname_attr, self.name_suffix_attr,
+                  self.name_prefix_attr, 
+                  self.sname_prev_attr, self.nickname_attr,
+                  self.new_age_attr, self.gender_attr, self.address_attr,
+                  self.city_attr, self.state_attr,
+                  self.postcode_attr]
           
+          select_tup = self.AttrCheck(1,self.gname_attr, 
+          self.mname_attr, 
+          self.sname_attr, 
+          self.name_suffix_attr,
+          self.name_prefix_attr, 
+          self.sname_prev_attr, 
+          self.nickname_attr,
+          self.new_age_attr, 
+          self.gender_attr, 
+          self.address_attr,
+          self.city_attr, 
+          self.state_attr,
+          self.postcode_attr, 
+          self.phone_num_cell_attr,
+          self.phone_num_work_attr, 
+          self.phone_num_home_attr,
+          self.credit_card_attr, 
+          self.social_security_attr,
+          self.passport_attr, 
+          self.mother)
+
+          #tick will be the true or false tuple
+          #j will be the select_tup
+          tick = self.AttrCheck(*args)
+          select=(getattr(select_tup,x) for x in select_tup._fields if getattr(tick,x)==True)
+
+          #out = OrderedDict((attr.attribute_name, attr.create_attribute_value()) for attr in primary)
+          out = OrderedDict((attr.attribute_name, attr.create_attribute_value()) for attr in select)
+
+
           def attr_out_set(container, attr):
               container[attr.attribute_name] = attr.create_attribute_value() 
 
@@ -317,10 +340,10 @@ class AttrSet(object):
           function = attrgenfunct.marriage,
           parameters=[int(out['age-new'])])
 
-          depend = [self.email_attr, self.DOB_attr, self.race_attr,\
+          dependent = [self.email_attr, self.DOB_attr, self.race_attr,\
                     self.hispanic_attr, self.marriage_attr]
 
-          for value in depend:
+          for value in dependent:
               attr_out_set(out, value)
 
           return out
@@ -573,6 +596,10 @@ def row_synth(genfunct, row_count):
     'genfunct is an AttrSet object, row_count is int'
     return (genfunct.output() for x in xrange(row_count))
 
+def row_synth_alt(genfunct, row_count):
+    'genfunct is an AttrSet object, row_count is int'
+    return (genfunct.output_alt() for x in xrange(row_count))
+
 def row_keys(genfunct):
     'get keys for output labels'
     return genfunct.output().keys()
@@ -655,10 +682,10 @@ def corrupt_output(a_output):
 
 # Code to output to IO string vs CSV (next two functions)
 def original_output2(base_output, a):
-    return to_string(base_output,a.output().keys())
+    to_string(base_output,a.output().keys())
 
 def corrupt_output2(base_output):
-  return to_corruptor_write(from_tdc(test_data_corruptor.corrupt_records(\
+  to_corruptor_write(from_tdc(test_data_corruptor.corrupt_records(\
                                 to_corruptor_gf(base_output)))) 
 
 attr_name_list = row_keys(AttrSet())
@@ -736,4 +763,8 @@ if __name__ == '__main__':
 
     # Code to output to IO string vs CSV  
     original_output2(base_output_b, b)
-    corrupt_output2(base_output_b)
+    # Code to output to IO string vs CSV  
+    out_io = to_corruptor_write_io_string(\
+             from_tdc(\
+             test_data_corruptor.corrupt_records(\
+             to_corruptor_gf(base_output_b))))

@@ -2,7 +2,7 @@
 {% block body %}
   {% if session.logged_in %}
 
-    <form action="/add" method="post" class="add-entry">
+    <form action="{{ url_for('select_attr') }}" method="post" class="add-entry">
       <p><u>Attributes Selection</u></p>
       <p>Check the attributes to be generated. Required fields are marked with asterisk.</p>
       <input type="checkbox" name="given-name" value="gname"/>Given Name*<br/>
