@@ -174,7 +174,9 @@ def new_corrupt():
             to_tar = tarfile.TarInfo(output[0])
             to_tar.size =  len(output[1])
             tar.addfile(to_tar, StringIO(output[1]))
-        tar.add("geco_log.txt")
+        #to_tar = tarfile.TarInfo('geco_log.txt')
+        #to_tar.size = test_data_corruptor.corrupt_log.len
+        #tar.addfile(test_data_corruptor.corrupt_log)
 
     #tar = tarfile.open("synthesized_stream.tar.gz", "r|gz")
     def tar_stream():
