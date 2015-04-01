@@ -235,8 +235,8 @@ def select_attr():
     b_gen = b.output_alt(*test_true)
     c_gen = c.output_alt(*test_true)
     #instead of row_synth
-    base_output_b = list((b_gen for x in xrange(num_org_rec/2)))
-    base_output_c = (c_gen for x in xrange(num_org_rec/2))
+    base_output_b = list((b.output_alt(*test_true) for x in xrange(num_org_rec/2)))
+    base_output_c = (c.output_alt(*test_true) for x in xrange(num_org_rec/2))
     
     base_output_b.extend(base_output_c)
 
@@ -246,8 +246,8 @@ def select_attr():
                  from_tdc(\
                  test_data_corruptor.corrupt_records(\
                  to_corruptor_gf(base_output_b))))
-
-    return str(request.form.values())
+    #str(request.form.values())
+    return original_io 
 
 #log in log out
 @app.route('/login/', methods=['GET', 'POST'])
