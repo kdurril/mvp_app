@@ -11,9 +11,16 @@ from flask import Flask, request, session, g, redirect, url_for, \
 
 from geco.corruptor import CorruptDataSet
 from geco.english_class import original_output2, corrupt_output2,\
-                               AttrSet, AttrSetM, row_synth, num_org_rec,\
+                               AttrSet, AttrSetM, row_synth,\
                                to_string, to_corruptor_gf, test_data_corruptor,\
-                               from_tdc, to_corruptor_write_io_string
+                               from_tdc, to_corruptor_write_io_string,\
+                               num_org_rec, num_dup_rec,attr_name_list,\
+                               max_duplicate_per_record,\
+                               num_duplicates_distribution,\
+                               max_modification_per_attr,\
+                               num_modification_per_record,\
+                               attr_mod_prob_dictionary,\
+                               attr_mod_data_dictionary
 
 from StringIO import StringIO
 from tempfile import TemporaryFile
@@ -120,8 +127,10 @@ def new_original():
     b = AttrSet()
     c = AttrSetM()
 
-    base_output_b = list(row_synth(b, num_org_rec/2 ))
-    base_output_c = list(row_synth(c, num_org_rec/2 ))
+    #base_output_b = list(row_synth(b, num_org_rec/2 ))
+    
+    #base_output_c = list(row_synth(c, num_org_rec/2 ))
+    
     base_output_b.extend(base_output_c)
 
     original_io = to_string(base_output_b, b.output().keys())
@@ -189,14 +198,14 @@ def new_corrupt():
                      mimetype="application/gzip",\
                      headers={"Content-Disposition":
                               "attachment;filename=synthesized.tar.gz"})
-@app.route('/select_attr/', methods=['POST'])
+@app.route('/select_attr/', methods=['GET','POST'])
 def select_attr():
     
-    num_org_rec = request.form["NumGen"]
-    num_dup_rec = request.form["NumDup"]
-    max_duplicate_per_record = request.form["MaxDup"]
-    max_modification_per_attr = request.form["MaxMod_Attr"]
-    num_modification_per_record = request.form["MaxMod_Rec"]
+    num_org_rec = int(request.form["NumGen"])
+    num_dup_rec = int(request.form["NumDup"])
+    max_duplicate_per_record = int(request.form["MaxDup"])
+    max_modification_per_attr = int(request.form["MaxMod_Attr"])
+    num_modification_per_record = int(request.form["MaxMod_Rec"])
     
     #CorruptDataSet from corruptors.py
     test_data_corruptor = CorruptDataSet(number_of_org_records = \
@@ -217,8 +226,18 @@ def select_attr():
                                                  attr_mod_data_dictionary)
     b = AttrSet()
     c = AttrSetM()
-    base_output_b = list(row_synth_alt(b, num_org_rec/2 ))
-    base_output_c = list(row_synth_alt(c, num_org_rec/2 ))
+    #alter structure
+    test_true = (True,True,True,True,True,True,
+                 True,True,True,True,True,True,
+                 True,True,True,True,True,True,
+                 True,True,True)
+    #seperate output
+    b_gen = b.output_alt(*test_true)
+    c_gen = c.output_alt(*test_true)
+    #instead of row_synth
+    base_output_b = list((b_gen for x in xrange(num_org_rec/2)))
+    base_output_c = (c_gen for x in xrange(num_org_rec/2))
+    
     base_output_b.extend(base_output_c)
 
     original_io = to_string(base_output_b, b.output().keys())
