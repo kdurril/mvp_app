@@ -247,7 +247,26 @@ def select_attr():
                  test_data_corruptor.corrupt_records(\
                  to_corruptor_gf(base_output_b))))
     #str(request.form.values())
-    return original_io 
+    final_output = (('original.csv', original_io), ('corrupt.csv',corrupt_io))
+
+    with tarfile.open("synthesized_stream.tar.gz", "w:gz") as tar:
+        for output in final_output:
+            to_tar = tarfile.TarInfo(output[0])
+            to_tar.size =  len(output[1])
+            tar.addfile(to_tar, StringIO(output[1]))
+        #to_tar = tarfile.TarInfo('geco_log.txt')
+        #to_tar.size = test_data_corruptor.corrupt_log.len
+        #tar.addfile(test_data_corruptor.corrupt_log.read())
+
+    #tar = tarfile.open("synthesized_stream.tar.gz", "r|gz")
+    def tar_stream():
+        tar = open("synthesized_stream.tar.gz", "rb")
+        yield tar.read()
+    
+    return Response(tar_stream(),\
+                     mimetype="application/gzip",\
+                     headers={"Content-Disposition":
+                              "attachment;filename=synthesized.tar.gz"})
 
 #log in log out
 @app.route('/login/', methods=['GET', 'POST'])
