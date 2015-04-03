@@ -39,8 +39,8 @@ out_file_name = 'example-data-english.csv'
 
 # Set how many original and how many duplicate records are to be generated.
 #
-num_org_rec = 400
-num_dup_rec = 20
+num_org_rec = 4
+num_dup_rec = 2
 
 # Set the maximum number of duplicate records can be generated per original
 # record.
@@ -83,6 +83,7 @@ class AttrMeta(type):
                     freq_file_name = os.path.abspath('lookup_files/lastname.csv'),
                     has_header_line = False,
                     unicode_encoding = unicode_encoding_used)
+
         self.name_suffix_attr = \
     generator.GenerateFuncAttribute(attribute_name = 'name-suffix',
                    function = attrgenfunct.generate_name_suffix)
@@ -270,6 +271,7 @@ class AttrSet(object):
         
         return outputwork2
 
+
     def output_alt(self, *args, **kwargs):
           'selective attribute output'
 
@@ -305,10 +307,11 @@ class AttrSet(object):
 
           #tick will be the true or false tuple
           #j will be the select_tup
-          tick = self.AttrCheck(*args)
-          select=(getattr(select_tup,x) for x in select_tup._fields if getattr(tick,x)==True)
-
-          #out = OrderedDict((attr.attribute_name, attr.create_attribute_value()) for attr in primary)
+          #tick = self.AttrCheck(*args)
+          #select=(getattr(select_tup,x) for x in select_tup._fields if getattr(tick,x)==True)
+          
+          select = [select_tup._asdict()[y] for y in args]
+          
           out = OrderedDict((attr.attribute_name, attr.create_attribute_value()) for attr in select)
 
 
