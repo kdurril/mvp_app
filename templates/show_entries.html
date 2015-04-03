@@ -12,13 +12,13 @@
       <input type="checkbox" name="middle name" value="mname"/>Middle Name<br/>
       <input type="checkbox" name="name-prefix" value="name_prefix"/>Prefix<br/>
       <input type="checkbox" name="name-suffix" value="name_suffix"/>Suffix<br/>
-      <input type="checkbox" name="previous name" value="previous-surname"/>Previous Surname<br/>
+      <input type="checkbox" name="previous name" value="sname_prev"/>Previous Surname<br/>
       <input type="checkbox" name="age" value="new_age"/>Age<br/>
-      <input type="checkbox" name="address" value="street-address"/>Street Address<br/>
+      <input type="checkbox" name="address" value="address"/>Street Address<br/>
       <input type="checkbox" name="city" value="city"/>City<br/>
       <input type="checkbox" name="state" value="state"/>State<br/>
       <input type="checkbox" name="postcode" value="postcode"/>Postcode<br/>
-      <input type="checkbox" name="cell_number" value="phone_num_cell"/>Cell Number<br/>
+      <input type="checkbox" name="cell-number" value="phone_num_cell"/>Cell Number<br/>
       <input type="checkbox" name="work-number" value="phone_num_work"/>Work Number<br/>
       <input type="checkbox" name="phome-number" value="phone_num_home"/>Home Number<br/>
       <input type="checkbox" name="credit-card-number" value="credit_card"/>Credit Card Number<br/>
@@ -49,7 +49,7 @@
   {% for entry in entries %}
     <li><a href="/{{entry.id}}">{{ entry.id }}</a>{{ entry.name_last }}, {{ entry.name_first }}, {{ entry.gender }}</p>
   {% else %}
-    <li><em>Add data</em>
+    
   {% endfor %}
   </ul>
 {% endblock %}

@@ -231,12 +231,16 @@ def select_attr():
                  True,True,True,True,True,True,
                  True,True,True,True,True,True,
                  True,True,True)
+    #remove = [request.form[y] for y in ['NumbGen', 'NumDup', 'MaxDup', 'MaxMod_Attr', 'MaxMod_Rec']]
+    #input_form = [x for x in request.form not in remove]
     #seperate output
-    b_gen = b.output_alt(*test_true)
-    c_gen = c.output_alt(*test_true)
+    fieldsout = ['gname', 'sname', 'new_age', 'address']
+    b_gen = b.output_alt('gname', 'sname', 'new_age', 'address')
+    c_gen = c.output_alt('gname', 'sname', 'new_age', 'address')
+    #*input_form
     #instead of row_synth
-    base_output_b = list((b.output_alt(*test_true) for x in xrange(num_org_rec/2)))
-    base_output_c = (c.output_alt(*test_true) for x in xrange(num_org_rec/2))
+    base_output_b = list((b.output_alt(*fieldsout) for x in xrange(num_org_rec/2)))
+    base_output_c = (c.output_alt(*fieldsout) for x in xrange(num_org_rec/2))
     
     base_output_b.extend(base_output_c)
 
@@ -246,27 +250,28 @@ def select_attr():
                  from_tdc(\
                  test_data_corruptor.corrupt_records(\
                  to_corruptor_gf(base_output_b))))
-    #str(request.form.values())
+    str(request.form.values())
     final_output = (('original.csv', original_io), ('corrupt.csv',corrupt_io))
 
-    with tarfile.open("synthesized_stream.tar.gz", "w:gz") as tar:
-        for output in final_output:
-            to_tar = tarfile.TarInfo(output[0])
-            to_tar.size =  len(output[1])
-            tar.addfile(to_tar, StringIO(output[1]))
+    #with tarfile.open("synthesized_stream.tar.gz", "w:gz") as tar:
+    #    for output in final_output:
+    #        to_tar = tarfile.TarInfo(output[0])
+    #        to_tar.size =  len(output[1])
+    #        tar.addfile(to_tar, StringIO(output[1]))
         #to_tar = tarfile.TarInfo('geco_log.txt')
         #to_tar.size = test_data_corruptor.corrupt_log.len
         #tar.addfile(test_data_corruptor.corrupt_log.read())
 
     #tar = tarfile.open("synthesized_stream.tar.gz", "r|gz")
-    def tar_stream():
-        tar = open("synthesized_stream.tar.gz", "rb")
-        yield tar.read()
+    #def tar_stream():
+    #    tar = open("synthesized_stream.tar.gz", "rb")
+    #    yield tar.read()
     
-    return Response(tar_stream(),\
-                     mimetype="application/gzip",\
-                     headers={"Content-Disposition":
-                              "attachment;filename=synthesized.tar.gz"})
+    #return Response(tar_stream(),\
+    #                 mimetype="application/gzip",\
+    #                 headers={"Content-Disposition":
+    #                          "attachment;filename=synthesized.tar.gz"})
+    return str(base_output_b)
 
 #log in log out
 @app.route('/login/', methods=['GET', 'POST'])
