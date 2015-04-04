@@ -171,8 +171,13 @@ def new_corrupt():
     base_output_c = list(row_synth(c, num_org_rec/2 ))
     base_output_b.extend(base_output_c)
 
-    original_io = to_string(base_output_b, b.output().keys())
+    counter = 0
+    for x in base_output_b:
+        x['primary_key'] = counter
+        counter += 1
 
+    original_io = to_string(base_output_b, b.output().keys())
+    
     corrupt_io = to_corruptor_write_io_string(\
                  from_tdc(\
                  test_data_corruptor.corrupt_records(\
@@ -238,6 +243,11 @@ def select_attr():
     base_output_c = (c.output_alt(*allfields) for x in xrange(num_org_rec/2))
     
     base_output_b.extend(base_output_c)
+    
+    counter = 0
+    for x in base_output_b:
+        x['primary_key'] = counter
+        counter += 1
 
     original_io = to_string(base_output_b, b.output().keys())
 
