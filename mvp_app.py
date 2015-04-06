@@ -22,6 +22,7 @@ from geco.english_class import original_output2, corrupt_output2,\
                                attr_mod_prob_dictionary,\
                                attr_mod_data_dictionary
 
+from itertools import chain
 from StringIO import StringIO
 from tempfile import TemporaryFile
 import tarfile
@@ -212,6 +213,57 @@ def select_attr():
     max_duplicate_per_record = int(request.form["MaxDup"])
     max_modification_per_attr = int(request.form["MaxMod_Attr"])
     num_modification_per_record = int(request.form["MaxMod_Rec"])
+    form_exclude = ['NumGen','NumDup','MaxDup','MaxMod_Attr','MaxMod_Rec']
+    attr_dict = dict(request.form)
+    [attr_dict.pop(x) for x in form_exclude]
+
+    b = AttrSet()
+    c = AttrSetM()
+    
+    allfields = list(chain.from_iterable(attr_dict.values()))
+    
+    #allfields = ['primary_ID','gname', 'mname','sname','name_suffix',\
+    #              'name_prefix','sname_prev','nickname','new_age',\
+    #              'gender','address','city','state','postcode',\
+    #              'phone_num_cell','phone_num_work','phone_num_home']
+                  #'credit_card','social_security','passport','mother']
+
+    base_output_b = list(b.output_alt(*allfields) for x in xrange(num_org_rec/2))
+    base_output_c = (c.output_alt(*allfields) for x in xrange(num_org_rec/2))
+    
+    base_output_b.extend(base_output_c)
+    
+    counter = 0
+    for x in base_output_b:
+        x['primary_key'] = counter
+        counter += 1
+
+    original_io = to_string(base_output_b, b.output().keys())
+
+    select_tup = b.AttrCheck(b.primary_ID_attr,
+          b.gname_attr, b.mname_attr, b.sname_attr, 
+          b.name_suffix_attr, b.name_prefix_attr, b.sname_prev_attr, 
+          b.nickname_attr, b.new_age_attr, b.gender_attr, b.address_attr,
+          b.city_attr, b.state_attr, b.postcode_attr, 
+          b.phone_num_cell_attr, b.phone_num_work_attr, b.phone_num_home_attr,
+          b.credit_card_attr, b.social_security_attr, b.passport_attr, 
+          b.mother)
+
+    select = (getattr(select_tup,y) for y in allfields)
+    select_keys = [attr.attribute_name for attr in select]
+
+    attr_mod_prob = dict(x for x in attr_mod_prob_dictionary.items() if x[0] in select_keys)
+    attr_mod_data = dict(x for x in attr_mod_data_dictionary.items() if x[0] in select_keys)
+    attr_name_list = select_keys
+    uniform_update = 1/float(len(attr_mod_prob.values()))
+
+    if sum(attr_mod_prob.values()) != 1:
+        for x in attr_mod_prob.keys():
+            attr_mod_prob[x] = uniform_update
+
+    #while sum(attr_mod_prob_dictionary.values()) < 1:
+    #    for x in attr_mod_prob_dictionary.keys():
+    #        attr_mod_prob_dictionary[x] += .01
     
     #CorruptDataSet from corruptors.py
     test_data_corruptor = CorruptDataSet(number_of_org_records = \
@@ -227,30 +279,10 @@ def select_attr():
                                           num_mod_per_rec = \
                                                  num_modification_per_record,
                                           attr_mod_prob_dict = \
-                                                 attr_mod_prob_dictionary,
+                                                 attr_mod_prob,
                                           attr_mod_data_dict = \
-                                                 attr_mod_data_dictionary)
-    b = AttrSet()
-    c = AttrSetM()
-
-    allfields = ['primary_ID','gname', 'mname','sname','name_suffix',\
-                                  'name_prefix','sname_prev','nickname','new_age',\
-                                  'gender','address','city','state','postcode',\
-                                  'phone_num_cell','phone_num_work','phone_num_home',\
-                                  'credit_card','social_security','passport','mother']
-
-    base_output_b = list(b.output_alt(*allfields) for x in xrange(num_org_rec/2))
-    base_output_c = (c.output_alt(*allfields) for x in xrange(num_org_rec/2))
+                                                 attr_mod_data)
     
-    base_output_b.extend(base_output_c)
-    
-    counter = 0
-    for x in base_output_b:
-        x['primary_key'] = counter
-        counter += 1
-
-    original_io = to_string(base_output_b, b.output().keys())
-
     corrupt_io = to_corruptor_write_io_string(\
                  from_tdc(\
                  test_data_corruptor.corrupt_records(\
